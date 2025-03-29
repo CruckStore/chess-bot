@@ -7,13 +7,14 @@ interface SquareProps {
   selected?: boolean;
   highlighted?: boolean;
   lastMove?: boolean;
+  suggestion?: boolean;
 }
 
-const Square: React.FC<SquareProps> = ({ position, piece, onClick, selected, highlighted, lastMove }) => {
+const Square: React.FC<SquareProps> = ({ position, piece, onClick, selected, highlighted, lastMove, suggestion }) => {
   const file = position.charCodeAt(0) - 'a'.charCodeAt(0);
   const rank = parseInt(position[1], 10) - 1;
   const isDark = (file + rank) % 2 !== 0;
-  let className = "square " + (isDark ? "dark" : "light") + (selected ? " selected" : "") + (lastMove ? " last-move" : "");
+  let className = "square " + (isDark ? "dark" : "light") + (selected ? " selected" : "") + (lastMove ? " last-move" : "") + (suggestion ? " suggestion" : "");
   return (
     <div className={className} onClick={() => onClick(position)}>
       {piece && <img src={`/assets/${piece}.png`} alt={piece} />}
@@ -30,9 +31,10 @@ interface ChessBoardProps {
   highlightedSquares: string[];
   flipped?: boolean;
   lastMove?: string[];
+  suggestedMove?: string[] | null;
 }
 
-const ChessBoard: React.FC<ChessBoardProps> = ({ boardSetup, onSquareClick, selectedSquare, highlightedSquares, flipped = false, lastMove = [] }) => {
+const ChessBoard: React.FC<ChessBoardProps> = ({ boardSetup, onSquareClick, selectedSquare, highlightedSquares, flipped = false, lastMove = [], suggestedMove = null }) => {
   const ranks = flipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
   const files = flipped ? ['h','g','f','e','d','c','b','a'] : ['a','b','c','d','e','f','g','h'];
   let rows = [];
@@ -41,7 +43,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({ boardSetup, onSquareClick, sele
     for (let f of files) {
       const pos = `${f}${r}`;
       squares.push(
-        <Square key={pos} position={pos} piece={boardSetup[pos]} onClick={onSquareClick} selected={selectedSquare === pos} highlighted={highlightedSquares.includes(pos)} lastMove={lastMove.includes(pos)} />
+        <Square key={pos} position={pos} piece={boardSetup[pos]} onClick={onSquareClick} selected={selectedSquare === pos} highlighted={highlightedSquares.includes(pos)} lastMove={lastMove.includes(pos)} suggestion={suggestedMove ? suggestedMove.includes(pos) : false} />
       );
     }
     rows.push(

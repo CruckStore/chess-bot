@@ -11,9 +11,9 @@ const App: React.FC = () => {
   const [whiteTime, setWhiteTime] = useState(0);
   const [blackTime, setBlackTime] = useState(0);
   const [initialTime, setInitialTime] = useState(5);
-  const [isSoundOn, setIsSoundOn] = useState(true);
   const [lastMove, setLastMove] = useState<string[]>([]);
-  const [update, setUpdate] = useState(0);
+  const [suggestedMove, setSuggestedMove] = useState<string[] | null>(null);
+  const [dummy, setDummy] = useState(0);
 
   useEffect(() => {
     if (gameStarted) {
@@ -35,6 +35,7 @@ const App: React.FC = () => {
       } else {
         setBlackTime(prev => (prev > 0 ? prev - 1 : 0));
       }
+      setDummy(d => d + 1);
     }, 1000);
     return () => clearInterval(interval);
   }, [gameStarted]);
@@ -56,7 +57,6 @@ const App: React.FC = () => {
   };
 
   const playSound = () => {
-    if (!isSoundOn) return;
     const audio = new Audio("/assets/move.mp3");
     audio.play();
   };
@@ -80,7 +80,7 @@ const App: React.FC = () => {
         if (move) {
           setLastMove([selectedSquare, position]);
           playSound();
-          setUpdate(u => u + 1);
+          setSuggestedMove(null);
         }
       }
       setSelectedSquare(null);
@@ -93,20 +93,18 @@ const App: React.FC = () => {
     setSelectedSquare(null);
     setLegalMoves([]);
     setLastMove([]);
+    setSuggestedMove(null);
     const initialSeconds = initialTime * 60;
     setWhiteTime(initialSeconds);
     setBlackTime(initialSeconds);
-    setUpdate(u => u + 1);
   };
 
   const undoMove = () => {
-    const history = gameRef.current.history({ verbose: true });
-    if (history.length === 0) return;
+    if (gameRef.current.history().length === 0) return;
     gameRef.current.undo();
     setLastMove([]);
     setSelectedSquare(null);
     setLegalMoves([]);
-    setUpdate(u => u + 1);
   };
 
   const toggleFlip = () => {
@@ -118,15 +116,12 @@ const App: React.FC = () => {
     restartGame();
   };
 
-  const toggleSound = () => {
-    setIsSoundOn(!isSoundOn);
-  };
-
-  const suggestMove = () => {
-    const moves = gameRef.current.moves();
+  const handleSuggestion = () => {
+    const moves = gameRef.current.moves({ verbose: true });
     if (moves.length > 0) {
       const randomMove = moves[Math.floor(Math.random() * moves.length)];
-      alert(`Suggestion: ${randomMove}`);
+      setSuggestedMove([randomMove.from, randomMove.to]);
+      setTimeout(() => setSuggestedMove(null), 3000);
     }
   };
 
@@ -142,9 +137,10 @@ const App: React.FC = () => {
     const initialSeconds = initialTime * 60;
     setWhiteTime(initialSeconds);
     setBlackTime(initialSeconds);
-    setUpdate(u => u + 1);
   };
 
+  const rankLabels = isFlipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
+  const fileLabels = isFlipped ? ['h','g','f','e','d','c','b','a'] : ['a','b','c','d','e','f','g','h'];
   const history = gameRef.current.history();
 
   if (!gameStarted) {
@@ -153,12 +149,7 @@ const App: React.FC = () => {
         <h1>Réglages de la partie</h1>
         <div>
           <label>Temps initial (minutes): </label>
-          <input
-            type="number"
-            value={initialTime}
-            onChange={e => setInitialTime(parseInt(e.target.value) || 0)}
-            min="1"
-          />
+          <input type="number" value={initialTime} onChange={e => setInitialTime(parseInt(e.target.value) || 0)} min="1" />
         </div>
         <button onClick={startGame}>Démarrer la partie</button>
       </div>
@@ -168,30 +159,39 @@ const App: React.FC = () => {
   return (
     <div className="app">
       <h1>Jeu d'échecs</h1>
-      <div className="controls">
+      <div className="top-controls">
         <button onClick={restartGame}>Recommencer</button>
         <button onClick={undoMove}>Annuler le dernier coup</button>
         <button onClick={toggleFlip}>Flip Board</button>
         <button onClick={forfeit}>Abandonner</button>
-        <button onClick={toggleSound}>{isSoundOn ? "Mute" : "Unmute"}</button>
-        <button onClick={suggestMove}>Suggestion</button>
       </div>
-      <div className="game-container">
-        <ChessBoard boardSetup={boardSetup()} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} highlightedSquares={legalMoves} flipped={isFlipped} lastMove={lastMove} />
-        <div className="side-panel">
-          <div className="clocks">
-            <div className="timer">Blancs: {formatTime(whiteTime)}</div>
-            <div className="timer">Noirs: {formatTime(blackTime)}</div>
+      <div className="board-container">
+        <div className="board-with-ranks">
+          <div className="rank-labels">
+            {rankLabels.map(r => <div key={r} className="rank-label">{r}</div>)}
           </div>
-          <div className="move-history">
-            <h2>Historique</h2>
-            <ol>
-              {history.map((move, index) => (
-                <li key={index}>{move}</li>
-              ))}
-            </ol>
-          </div>
+          <ChessBoard boardSetup={boardSetup()} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} highlightedSquares={legalMoves} flipped={isFlipped} lastMove={lastMove} suggestedMove={suggestedMove} />
         </div>
+        <div className="file-labels">
+          {fileLabels.map(f => <div key={f} className="file-label">{f}</div>)}
+        </div>
+      </div>
+      <div className="side-panel">
+        <div className="clocks">
+          <div className="timer">Blancs: {formatTime(whiteTime)}</div>
+          <div className="timer">Noirs: {formatTime(blackTime)}</div>
+        </div>
+        <div className="move-history">
+          <h2>Historique</h2>
+          <ol>
+            {history.map((move, index) => (
+              <li key={index}>{move}</li>
+            ))}
+          </ol>
+        </div>
+      </div>
+      <div className="bottom-controls">
+        <button onClick={handleSuggestion}>Suggestion</button>
       </div>
     </div>
   );

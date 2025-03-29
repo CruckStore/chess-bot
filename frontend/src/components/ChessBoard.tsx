@@ -17,7 +17,7 @@ const Square: React.FC<SquareProps> = ({ position, piece, onClick, selected, hig
   if (highlighted) className += " highlighted";
   return (
     <div className={className} onClick={() => onClick(position)}>
-      {piece && <img src={`/assets/${piece}.png`} alt={piece} />}
+      {piece && <img src={`./assets/${piece}.png`} alt={piece} />}
     </div>
   );
 };

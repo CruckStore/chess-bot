@@ -1,35 +1,47 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from 'react';
+import { Chess } from 'chess.js';
+import ChessBoard from './components/ChessBoard';
 
-function App() {
-  const [count, setCount] = useState(0)
+const App: React.FC = () => {
+  const [game, setGame] = useState(new Chess());
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+  const boardSetup = () => {
+    let setup: { [key: string]: string } = {};
+    const board = game.board();
+    for (let r = 0; r < board.length; r++) {
+      for (let c = 0; c < board[r].length; c++) {
+        const piece = board[r][c];
+        if (piece) {
+          const file = String.fromCharCode('a'.charCodeAt(0) + c);
+          const rank = 8 - r;
+          setup[`${file}${rank}`] = piece.color + piece.type.toUpperCase();
+        }
+      }
+    }
+    return setup;
+  };
+
+  const handleSquareClick = (position: string) => {
+    if (!selectedSquare) {
+      const piece = game.get(position);
+      if (piece && piece.color === game.turn()) {
+        setSelectedSquare(position);
+      }
+    } else {
+      const move = game.move({ from: selectedSquare, to: position, promotion: 'q' });
+      if (move) {
+        setGame(new Chess(game.fen()));
+      }
+      setSelectedSquare(null);
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div className="app">
+      <h1>Chess</h1>
+      <ChessBoard boardSetup={boardSetup()} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} />
+    </div>
+  );
+};
 
-export default App
+export default App;

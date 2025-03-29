@@ -9,6 +9,16 @@ body {
   text-align: center;
 }
 
+.controls {
+  margin-bottom: 10px;
+}
+
+.controls button {
+  margin: 0 5px;
+  padding: 5px 10px;
+  font-size: 16px;
+}
+
 .chess-board {
   display: flex;
   flex-direction: column;
@@ -42,6 +52,10 @@ body {
 
 .selected {
   outline: 2px solid red;
+}
+
+.highlighted {
+  background-color: rgba(0, 255, 0, 0.062);
 }
 
 .square img {

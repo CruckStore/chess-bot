@@ -5,6 +5,8 @@ import ChessBoard from './components/ChessBoard';
 const App: React.FC = () => {
   const [game, setGame] = useState(new Chess());
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+  const [legalMoves, setLegalMoves] = useState<string[]>([]);
+
   const boardSetup = () => {
     let setup: { [key: string]: string } = {};
     const board = game.board();
@@ -22,24 +24,52 @@ const App: React.FC = () => {
   };
 
   const handleSquareClick = (position: string) => {
+    if (selectedSquare === position) {
+      setSelectedSquare(null);
+      setLegalMoves([]);
+      return;
+    }
     if (!selectedSquare) {
       const piece = game.get(position);
       if (piece && piece.color === game.turn()) {
         setSelectedSquare(position);
+        const moves = game.moves({ square: position, verbose: true }).map(m => m.to);
+        setLegalMoves(moves);
       }
     } else {
-      const move = game.move({ from: selectedSquare, to: position, promotion: 'q' });
-      if (move) {
+      if (legalMoves.includes(position)) {
+        game.move({ from: selectedSquare, to: position, promotion: 'q' });
         setGame(new Chess(game.fen()));
       }
       setSelectedSquare(null);
+      setLegalMoves([]);
     }
   };
 
+  const restartGame = () => {
+    setGame(new Chess());
+    setSelectedSquare(null);
+    setLegalMoves([]);
+  };
+
+  const undoMove = () => {
+    game.undo();
+    setGame(new Chess(game.fen()));
+    setSelectedSquare(null);
+    setLegalMoves([]);
+  };
+
+  const turnText = game.turn() === 'w' ? "Blancs" : "Noirs";
+
   return (
     <div className="app">
-      <h1>Chess</h1>
-      <ChessBoard boardSetup={boardSetup()} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} />
+      <h1>Jeu d'échecs</h1>
+      <div>Tour: {turnText}</div>
+      <div className="controls">
+        <button onClick={restartGame}>Recommencer</button>
+        <button onClick={undoMove}>Annuler</button>
+      </div>
+      <ChessBoard boardSetup={boardSetup()} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} highlightedSquares={legalMoves} />
     </div>
   );
 };

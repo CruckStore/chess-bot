@@ -13,12 +13,15 @@ const App: React.FC = () => {
   const [lastMove, setLastMove] = useState<string[]>([]);
   const [suggestedMove, setSuggestedMove] = useState<string[] | null>(null);
   const [update, setUpdate] = useState(0);
+  const [endGameMessage, setEndGameMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (gameStarted && gameRef.current.isGameOver()) {
       let message = "";
       if (gameRef.current.isCheckmate()) {
-        message = `Échec et mat ! ${gameRef.current.turn() === 'w' ? 'Noirs' : 'Blancs'} gagnent !`;
+        const winningMove =
+          lastMove.length === 2 ? ` (Coup: ${lastMove[0]} → ${lastMove[1]})` : "";
+        message = `Bravo ! Échec et mat ! ${gameRef.current.turn() === 'w' ? 'Noirs' : 'Blancs'} gagnent !${winningMove}`;
       } else if (gameRef.current.isStalemate()) {
         message = "Pat !";
       } else if (gameRef.current.isThreefoldRepetition()) {
@@ -30,9 +33,9 @@ const App: React.FC = () => {
       } else {
         message = "Fin de partie !";
       }
-      alert(message);
+      setEndGameMessage(message);
     }
-  }, [update, gameStarted]);
+  }, [update, gameStarted, lastMove]);
 
   const boardSetup = () => {
     let setup: { [key: string]: string } = {};
@@ -97,6 +100,7 @@ const App: React.FC = () => {
     setLegalMoves([]);
     setLastMove([]);
     setSuggestedMove(null);
+    setEndGameMessage(null);
     setUpdate(u => u + 1);
   };
 
@@ -142,8 +146,8 @@ const App: React.FC = () => {
     setUpdate(u => u + 1);
   };
 
-  const rankLabels = isFlipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
-  const fileLabels = isFlipped ? ['h','g','f','e','d','c','b','a'] : ['a','b','c','d','e','f','g','h'];
+  const rankLabels = isFlipped ? [1, 2, 3, 4, 5, 6, 7, 8] : [8, 7, 6, 5, 4, 3, 2, 1];
+  const fileLabels = isFlipped ? ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'] : ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
   const history = gameRef.current.history();
 
   if (!gameStarted) {
@@ -228,6 +232,14 @@ const App: React.FC = () => {
       <div className="bottom-controls">
         <button onClick={handleSuggestion}>Suggestion</button>
       </div>
+      {endGameMessage && (
+        <div className="endgame-overlay">
+          <div className="endgame-message">
+            <h2>{endGameMessage}</h2>
+            <button onClick={() => { setEndGameMessage(null); restartGame(); }}>Recommencer</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

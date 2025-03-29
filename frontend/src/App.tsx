@@ -6,6 +6,7 @@ const App: React.FC = () => {
   const [game, setGame] = useState(new Chess());
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   const boardSetup = () => {
     let setup: { [key: string]: string } = {};
@@ -59,17 +60,33 @@ const App: React.FC = () => {
     setLegalMoves([]);
   };
 
+  const toggleFlip = () => {
+    setIsFlipped(!isFlipped);
+  };
+
   const turnText = game.turn() === 'w' ? "Blancs" : "Noirs";
+  const history = game.history();
 
   return (
     <div className="app">
       <h1>Jeu d'échecs</h1>
-      <div>Tour: {turnText}</div>
+      <div className="status">Tour: {turnText}</div>
       <div className="controls">
         <button onClick={restartGame}>Recommencer</button>
         <button onClick={undoMove}>Annuler</button>
+        <button onClick={toggleFlip}>Flip Board</button>
       </div>
-      <ChessBoard boardSetup={boardSetup()} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} highlightedSquares={legalMoves} />
+      <div className="game-container">
+        <ChessBoard boardSetup={boardSetup()} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} highlightedSquares={legalMoves} flipped={isFlipped} />
+        <div className="move-history">
+          <h2>Historique</h2>
+          <ol>
+            {history.map((move, index) => (
+              <li key={index}>{move}</li>
+            ))}
+          </ol>
+        </div>
+      </div>
     </div>
   );
 };

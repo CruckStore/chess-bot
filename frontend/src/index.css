@@ -7,6 +7,15 @@ body {
 
 .app {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.status {
+  margin: 10px;
+  font-size: 20px;
+  font-weight: bold;
 }
 
 .controls {
@@ -19,13 +28,19 @@ body {
   font-size: 16px;
 }
 
+.game-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
 .chess-board {
   display: flex;
   flex-direction: column;
   border: 2px solid #333;
   width: 480px;
   height: 480px;
-  margin: 20px auto;
+  margin: 20px;
 }
 
 .board-row {
@@ -40,6 +55,7 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  position: relative;
 }
 
 .light {
@@ -54,12 +70,45 @@ body {
   outline: 2px solid red;
 }
 
-.highlighted {
-  background-color: rgba(0, 255, 0, 0.062);
+.dot {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.capture-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid rgba(255,0,0,0.6);
+  border-radius: 50%;
+  box-sizing: border-box;
 }
 
 .square img {
   width: 50px;
   height: 50px;
   object-fit: contain;
+}
+
+.move-history {
+  text-align: left;
+  max-height: 480px;
+  overflow-y: auto;
+  margin: 20px;
+}
+
+.move-history h2 {
+  margin: 0 0 10px 0;
+}
+
+.move-history ol {
+  padding-left: 20px;
 }

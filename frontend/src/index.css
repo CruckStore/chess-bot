@@ -140,16 +140,6 @@ body {
   text-align: left;
 }
 
-.clocks {
-  margin-bottom: 20px;
-}
-
-.timer {
-  font-size: 18px;
-  font-weight: bold;
-  margin: 5px 0;
-}
-
 .move-history {
   max-height: 480px;
   overflow-y: auto;

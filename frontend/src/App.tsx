@@ -5,40 +5,34 @@ import ChessBoard from './components/ChessBoard';
 const App: React.FC = () => {
   const gameRef = useRef(new Chess());
   const [gameStarted, setGameStarted] = useState(false);
+  const [setupMode, setSetupMode] = useState<"standard" | "custom">("standard");
+  const [customFEN, setCustomFEN] = useState("");
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [whiteTime, setWhiteTime] = useState(0);
-  const [blackTime, setBlackTime] = useState(0);
-  const [initialTime, setInitialTime] = useState(5);
   const [lastMove, setLastMove] = useState<string[]>([]);
   const [suggestedMove, setSuggestedMove] = useState<string[] | null>(null);
-  const [dummy, setDummy] = useState(0);
+  const [update, setUpdate] = useState(0);
 
   useEffect(() => {
-    if (gameStarted) {
-      const initialSeconds = initialTime * 60;
-      setWhiteTime(initialSeconds);
-      setBlackTime(initialSeconds);
-    }
-  }, [gameStarted, initialTime]);
-
-  useEffect(() => {
-    if (!gameStarted) return;
-    const interval = setInterval(() => {
-      if (gameRef.current.game_over()) {
-        clearInterval(interval);
-        return;
-      }
-      if (gameRef.current.turn() === 'w') {
-        setWhiteTime(prev => (prev > 0 ? prev - 1 : 0));
+    if (gameStarted && gameRef.current.isGameOver()) {
+      let message = "";
+      if (gameRef.current.isCheckmate()) {
+        message = `Échec et mat ! ${gameRef.current.turn() === 'w' ? 'Noirs' : 'Blancs'} gagnent !`;
+      } else if (gameRef.current.isStalemate()) {
+        message = "Pat !";
+      } else if (gameRef.current.isThreefoldRepetition()) {
+        message = "Partie nulle par répétition !";
+      } else if (gameRef.current.isInsufficientMaterial()) {
+        message = "Partie nulle par matériel insuffisant !";
+      } else if (gameRef.current.isDraw()) {
+        message = "Partie nulle !";
       } else {
-        setBlackTime(prev => (prev > 0 ? prev - 1 : 0));
+        message = "Fin de partie !";
       }
-      setDummy(d => d + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [gameStarted]);
+      alert(message);
+    }
+  }, [update, gameStarted]);
 
   const boardSetup = () => {
     let setup: { [key: string]: string } = {};
@@ -80,7 +74,7 @@ const App: React.FC = () => {
         if (move) {
           setLastMove([selectedSquare, position]);
           playSound();
-          setSuggestedMove(null);
+          setUpdate(u => u + 1);
         }
       }
       setSelectedSquare(null);
@@ -89,14 +83,21 @@ const App: React.FC = () => {
   };
 
   const restartGame = () => {
-    gameRef.current = new Chess();
+    if (setupMode === "custom" && customFEN.trim() !== "") {
+      try {
+        gameRef.current = new Chess(customFEN);
+      } catch (error) {
+        alert("FEN invalide !");
+        return;
+      }
+    } else {
+      gameRef.current = new Chess();
+    }
     setSelectedSquare(null);
     setLegalMoves([]);
     setLastMove([]);
     setSuggestedMove(null);
-    const initialSeconds = initialTime * 60;
-    setWhiteTime(initialSeconds);
-    setBlackTime(initialSeconds);
+    setUpdate(u => u + 1);
   };
 
   const undoMove = () => {
@@ -105,6 +106,7 @@ const App: React.FC = () => {
     setLastMove([]);
     setSelectedSquare(null);
     setLegalMoves([]);
+    setUpdate(u => u + 1);
   };
 
   const toggleFlip = () => {
@@ -125,18 +127,19 @@ const App: React.FC = () => {
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s < 10 ? "0" : ""}${s}`;
-  };
-
   const startGame = () => {
-    gameRef.current = new Chess();
+    if (setupMode === "custom" && customFEN.trim() !== "") {
+      try {
+        gameRef.current = new Chess(customFEN);
+      } catch (error) {
+        alert("FEN invalide !");
+        return;
+      }
+    } else {
+      gameRef.current = new Chess();
+    }
     setGameStarted(true);
-    const initialSeconds = initialTime * 60;
-    setWhiteTime(initialSeconds);
-    setBlackTime(initialSeconds);
+    setUpdate(u => u + 1);
   };
 
   const rankLabels = isFlipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
@@ -148,9 +151,37 @@ const App: React.FC = () => {
       <div className="app">
         <h1>Réglages de la partie</h1>
         <div>
-          <label>Temps initial (minutes): </label>
-          <input type="number" value={initialTime} onChange={e => setInitialTime(parseInt(e.target.value) || 0)} min="1" />
+          <label>
+            <input
+              type="radio"
+              value="standard"
+              checked={setupMode === "standard"}
+              onChange={() => setSetupMode("standard")}
+            />
+            Position Standard
+          </label>
+          <label>
+            <input
+              type="radio"
+              value="custom"
+              checked={setupMode === "custom"}
+              onChange={() => setSetupMode("custom")}
+            />
+            Position Personnalisée
+          </label>
         </div>
+        {setupMode === "custom" && (
+          <div>
+            <label>FEN de départ: </label>
+            <input
+              type="text"
+              value={customFEN}
+              onChange={e => setCustomFEN(e.target.value)}
+              placeholder="Entrez la FEN"
+              style={{ width: '300px' }}
+            />
+          </div>
+        )}
         <button onClick={startGame}>Démarrer la partie</button>
       </div>
     );
@@ -170,17 +201,21 @@ const App: React.FC = () => {
           <div className="rank-labels">
             {rankLabels.map(r => <div key={r} className="rank-label">{r}</div>)}
           </div>
-          <ChessBoard boardSetup={boardSetup()} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} highlightedSquares={legalMoves} flipped={isFlipped} lastMove={lastMove} suggestedMove={suggestedMove} />
+          <ChessBoard
+            boardSetup={boardSetup()}
+            onSquareClick={handleSquareClick}
+            selectedSquare={selectedSquare}
+            highlightedSquares={legalMoves}
+            flipped={isFlipped}
+            lastMove={lastMove}
+            suggestedMove={suggestedMove}
+          />
         </div>
         <div className="file-labels">
           {fileLabels.map(f => <div key={f} className="file-label">{f}</div>)}
         </div>
       </div>
       <div className="side-panel">
-        <div className="clocks">
-          <div className="timer">Blancs: {formatTime(whiteTime)}</div>
-          <div className="timer">Noirs: {formatTime(blackTime)}</div>
-        </div>
         <div className="move-history">
           <h2>Historique</h2>
           <ol>

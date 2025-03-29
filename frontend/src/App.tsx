@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [suggestedMove, setSuggestedMove] = useState<string[] | null>(null);
   const [update, setUpdate] = useState(0);
   const [endGameMessage, setEndGameMessage] = useState<string | null>(null);
+  const [botEnabled, setBotEnabled] = useState(false);
 
   useEffect(() => {
     if (gameStarted && gameRef.current.isGameOver()) {
@@ -36,6 +37,28 @@ const App: React.FC = () => {
       setEndGameMessage(message);
     }
   }, [update, gameStarted, lastMove]);
+
+  useEffect(() => {
+    if (
+      gameStarted &&
+      botEnabled &&
+      gameRef.current.turn() === 'b' &&
+      !selectedSquare &&
+      !gameRef.current.isGameOver()
+    ) {
+      const botTimer = setTimeout(() => {
+        const moves = gameRef.current.moves({ verbose: true });
+        if (moves.length > 0) {
+          const randomMove = moves[Math.floor(Math.random() * moves.length)];
+          gameRef.current.move({ from: randomMove.from, to: randomMove.to, promotion: 'q' });
+          setLastMove([randomMove.from, randomMove.to]);
+          playSound();
+          setUpdate(u => u + 1);
+        }
+      }, 500);
+      return () => clearTimeout(botTimer);
+    }
+  }, [update, botEnabled, gameStarted, selectedSquare]);
 
   const boardSetup = () => {
     let setup: { [key: string]: string } = {};
@@ -199,6 +222,9 @@ const App: React.FC = () => {
         <button onClick={undoMove}>Annuler le dernier coup</button>
         <button onClick={toggleFlip}>Flip Board</button>
         <button onClick={forfeit}>Abandonner</button>
+        <button onClick={() => setBotEnabled(!botEnabled)}>
+          {botEnabled ? "Désactiver Bot (Noir)" : "Activer Bot (Noir)"}
+        </button>
       </div>
       <div className="board-container">
         <div className="board-with-ranks">
@@ -236,7 +262,9 @@ const App: React.FC = () => {
         <div className="endgame-overlay">
           <div className="endgame-message">
             <h2>{endGameMessage}</h2>
-            <button onClick={() => { setEndGameMessage(null); restartGame(); }}>Recommencer</button>
+            <button onClick={() => { setEndGameMessage(null); restartGame(); }}>
+              Recommencer
+            </button>
           </div>
         </div>
       )}

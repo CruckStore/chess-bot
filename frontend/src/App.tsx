@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Chess } from 'chess.js';
 import ChessBoard from './components/ChessBoard';
+import chessEngine from 'js-chess-engine';
 
-const BOT_DEPTH = 3;
+const BOT_DIFFICULTY = 5; // Ajustez la difficulté (plus le nombre est élevé, plus le bot sera fort)
 
 const App: React.FC = () => {
   const gameRef = useRef(new Chess());
@@ -18,89 +19,12 @@ const App: React.FC = () => {
   const [endGameMessage, setEndGameMessage] = useState<string | null>(null);
   const [botEnabled, setBotEnabled] = useState(false);
 
-  // Évaluation simple du plateau (en centi-pions)
-  const evaluateBoard = (game: Chess): number => {
-    const pieceValue: { [key: string]: number } = {
-      p: 100,
-      n: 320,
-      b: 330,
-      r: 500,
-      q: 900,
-      k: 20000
-    };
-    let evaluation = 0;
-    const board = game.board();
-    for (const row of board) {
-      for (const piece of row) {
-        if (piece) {
-          const value = pieceValue[piece.type] || 0;
-          evaluation += piece.color === 'w' ? value : -value;
-        }
-      }
-    }
-    return evaluation;
-  };
-
-  const minimax = (game: Chess, depth: number, alpha: number, beta: number, isMaximizing: boolean): number => {
-    if (depth === 0 || game.isGameOver()) {
-      return evaluateBoard(game);
-    }
-    const moves = game.moves({ verbose: true });
-    if (isMaximizing) {
-      let maxEval = -Infinity;
-      for (const move of moves) {
-        game.move(move);
-        const evalValue = minimax(game, depth - 1, alpha, beta, false);
-        game.undo();
-        maxEval = Math.max(maxEval, evalValue);
-        alpha = Math.max(alpha, evalValue);
-        if (beta <= alpha) break;
-      }
-      return maxEval;
-    } else {
-      let minEval = Infinity;
-      for (const move of moves) {
-        game.move(move);
-        const evalValue = minimax(game, depth - 1, alpha, beta, true);
-        game.undo();
-        minEval = Math.min(minEval, evalValue);
-        beta = Math.min(beta, evalValue);
-        if (beta <= alpha) break;
-      }
-      return minEval;
-    }
-  };
-
-  const getBestMove = (game: Chess, depth: number): { from: string, to: string } | null => {
-    const moves = game.moves({ verbose: true });
-    if (moves.length === 0) return null;
-    const currentTurn = game.turn();
-    let bestMove: any = null;
-    let bestEval = currentTurn === 'w' ? -Infinity : Infinity;
-    for (const move of moves) {
-      game.move(move);
-      const evalValue = minimax(game, depth - 1, -Infinity, Infinity, game.turn() === 'w');
-      game.undo();
-      if (currentTurn === 'w') {
-        if (evalValue > bestEval) {
-          bestEval = evalValue;
-          bestMove = move;
-        }
-      } else {
-        if (evalValue < bestEval) {
-          bestEval = evalValue;
-          bestMove = move;
-        }
-      }
-    }
-    return bestMove ? { from: bestMove.from, to: bestMove.to } : null;
-  };
-
   useEffect(() => {
     if (gameStarted && gameRef.current.isGameOver()) {
       let message = "";
       if (gameRef.current.isCheckmate()) {
-        const winningMove = lastMove.length === 2 ? ` (Coup: ${lastMove[0]} → ${lastMove[1]})` : "";
+        const winningMove =
+          lastMove.length === 2 ? ` (Coup: ${lastMove[0]} → ${lastMove[1]})` : "";
         message = `Bravo ! Échec et mat ! ${gameRef.current.turn() === 'w' ? 'Noirs' : 'Blancs'} gagnent !${winningMove}`;
       } else if (gameRef.current.isStalemate()) {
         message = "Pat !";
@@ -117,6 +41,7 @@ const App: React.FC = () => {
     }
   }, [update, gameStarted, lastMove]);
 
+  // Intégration du bot avec js-chess-engine pour les Noirs
   useEffect(() => {
     if (
       gameStarted &&
@@ -125,16 +50,17 @@ const App: React.FC = () => {
       !selectedSquare &&
       !gameRef.current.isGameOver()
     ) {
-      const botTimer = setTimeout(() => {
-        const bestMove = getBestMove(gameRef.current, BOT_DEPTH);
-        if (bestMove) {
-          gameRef.current.move({ from: bestMove.from, to: bestMove.to, promotion: 'q' });
-          setLastMove([bestMove.from, bestMove.to]);
-          playSound();
-          setUpdate(u => u + 1);
-        }
-      }, 500);
-      return () => clearTimeout(botTimer);
+      const fen = gameRef.current.fen();
+      // La fonction aiMove retourne une chaîne de type "e7e5"
+      const bestMoveStr = chessEngine.aiMove(fen, BOT_DIFFICULTY);
+      if (bestMoveStr && bestMoveStr !== "(none)") {
+        const from = bestMoveStr.substring(0,2);
+        const to = bestMoveStr.substring(2,4);
+        gameRef.current.move({ from, to, promotion: 'q' });
+        setLastMove([from, to]);
+        playSound();
+        setUpdate(u => u + 1);
+      }
     }
   }, [update, botEnabled, gameStarted, selectedSquare]);
 
@@ -247,8 +173,8 @@ const App: React.FC = () => {
     setUpdate(u => u + 1);
   };
 
-  const rankLabels = isFlipped ? [1, 2, 3, 4, 5, 6, 7, 8] : [8, 7, 6, 5, 4, 3, 2, 1];
-  const fileLabels = isFlipped ? ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'] : ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  const rankLabels = isFlipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
+  const fileLabels = isFlipped ? ['h','g','f','e','d','c','b','a'] : ['a','b','c','d','e','f','g','h'];
   const history = gameRef.current.history();
 
   if (!gameStarted) {

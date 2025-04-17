@@ -4,22 +4,52 @@ interface SquareProps {
   position: string;
   piece?: string;
   onClick: (position: string) => void;
+  onDropPiece: (from: string, to: string) => void;
   selected?: boolean;
   highlighted?: boolean;
   lastMove?: boolean;
   suggestion?: boolean;
 }
 
-const Square: React.FC<SquareProps> = ({ position, piece, onClick, selected, highlighted, lastMove, suggestion }) => {
+const Square: React.FC<SquareProps> = ({
+  position,
+  piece,
+  onClick,
+  onDropPiece,
+  selected,
+  highlighted,
+  lastMove,
+  suggestion
+}) => {
   const file = position.charCodeAt(0) - 'a'.charCodeAt(0);
   const rank = parseInt(position[1], 10) - 1;
   const isDark = (file + rank) % 2 !== 0;
-  let className = "square " + (isDark ? "dark" : "light") + (selected ? " selected" : "") + (lastMove ? " last-move" : "") + (suggestion ? " suggestion" : "");
+  let className = "square " + (isDark ? "dark" : "light");
+  if (selected)    className += " selected";
+  if (lastMove)    className += " last-move";
+  if (suggestion)  className += " suggestion";
+
   return (
-    <div className={className} onClick={() => onClick(position)}>
-      {piece && <img src={`/assets/${piece}.png`} alt={piece} />}
+    <div
+      className={className}
+      onClick={() => onClick(position)}
+      onDragOver={e => e.preventDefault()}
+      onDrop={e => {
+        e.preventDefault();
+        const from = e.dataTransfer.getData('from');
+        onDropPiece(from, position);
+      }}
+    >
+      {piece && (
+        <img
+          src={`/assets/${piece}.png`}
+          alt={piece}
+          draggable
+          onDragStart={e => e.dataTransfer.setData('from', position)}
+        />
+      )}
       {highlighted && !piece && <div className="dot"></div>}
-      {highlighted && piece && <div className="capture-marker"></div>}
+      {highlighted && piece  && <div className="capture-marker"></div>}
     </div>
   );
 };
@@ -27,6 +57,7 @@ const Square: React.FC<SquareProps> = ({ position, piece, onClick, selected, hig
 interface ChessBoardProps {
   boardSetup: { [key: string]: string };
   onSquareClick: (position: string) => void;
+  onDropPiece: (from: string, to: string) => void;
   selectedSquare: string | null;
   highlightedSquares: string[];
   flipped?: boolean;
@@ -34,25 +65,43 @@ interface ChessBoardProps {
   suggestedMove?: string[] | null;
 }
 
-const ChessBoard: React.FC<ChessBoardProps> = ({ boardSetup, onSquareClick, selectedSquare, highlightedSquares, flipped = false, lastMove = [], suggestedMove = null }) => {
+const ChessBoard: React.FC<ChessBoardProps> = ({
+  boardSetup,
+  onSquareClick,
+  onDropPiece,
+  selectedSquare,
+  highlightedSquares,
+  flipped = false,
+  lastMove = [],
+  suggestedMove = null
+}) => {
   const ranks = flipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
   const files = flipped ? ['h','g','f','e','d','c','b','a'] : ['a','b','c','d','e','f','g','h'];
-  let rows = [];
-  for (let r of ranks) {
-    let squares = [];
-    for (let f of files) {
-      const pos = `${f}${r}`;
-      squares.push(
-        <Square key={pos} position={pos} piece={boardSetup[pos]} onClick={onSquareClick} selected={selectedSquare === pos} highlighted={highlightedSquares.includes(pos)} lastMove={lastMove.includes(pos)} suggestion={suggestedMove ? suggestedMove.includes(pos) : false} />
-      );
-    }
-    rows.push(
-      <div key={r} className="board-row">
-        {squares}
-      </div>
-    );
-  }
-  return <div className="chess-board">{rows}</div>;
+
+  return (
+    <div className="chess-board">
+      {ranks.map(r => (
+        <div key={r} className="board-row">
+          {files.map(f => {
+            const pos = `${f}${r}`;
+            return (
+              <Square
+                key={pos}
+                position={pos}
+                piece={boardSetup[pos]}
+                onClick={onSquareClick}
+                onDropPiece={onDropPiece}
+                selected={selectedSquare === pos}
+                highlighted={highlightedSquares.includes(pos)}
+                lastMove={lastMove.includes(pos)}
+                suggestion={suggestedMove ? suggestedMove.includes(pos) : false}
+              />
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
 };
 
 export default ChessBoard;

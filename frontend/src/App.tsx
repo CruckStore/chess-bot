@@ -366,6 +366,8 @@ const App: React.FC = () => {
             boardSetup={boardSetup()}
             onSquareClick={handleSquareClick}
             onDropPiece={handleDrop}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
             selectedSquare={selectedSquare}
             highlightedSquares={legalMoves}
             flipped={isFlipped}

@@ -81,6 +81,8 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   boardSetup,
   onSquareClick,
   onDropPiece,
+  onDragStart,
+  onDragEnd,
   selectedSquare,
   highlightedSquares,
   flipped = false,

@@ -107,6 +107,8 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
                 piece={boardSetup[pos]}
                 onClick={onSquareClick}
                 onDropPiece={onDropPiece}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
                 selected={selectedSquare === pos}
                 highlighted={highlightedSquares.includes(pos)}
                 lastMove={lastMove.includes(pos)}

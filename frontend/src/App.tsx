@@ -216,6 +216,19 @@ const App: React.FC = () => {
     setLegalMoves([]);
   };
 
+  const handleDragStart = (from: string) => {
+    setSelectedSquare(from);
+    const moves = gameRef.current
+      .moves({ square: from, verbose: true })
+      .map(m => m.to);
+    setLegalMoves(moves);
+  };
+
+  const handleDragEnd = () => {
+    setSelectedSquare(null);
+    setLegalMoves([]);
+  };
+
   const restartGame = () => {
     if (setupMode === "custom" && customFEN.trim() !== "") {
       try {

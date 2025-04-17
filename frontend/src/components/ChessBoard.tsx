@@ -18,6 +18,8 @@ const Square: React.FC<SquareProps> = ({
   piece,
   onClick,
   onDropPiece,
+  onDragStart,
+  onDragEnd,
   selected,
   highlighted,
   lastMove,
@@ -47,7 +49,13 @@ const Square: React.FC<SquareProps> = ({
           src={`/assets/${piece}.png`}
           alt={piece}
           draggable
-          onDragStart={(e) => e.dataTransfer.setData("from", position)}
+          onDragStart={(e) => {
+            e.dataTransfer.setData("from", position);
+            onDragStart(position);
+          }}
+          onDragEnd={() => {
+            onDragEnd();
+          }}
         />
       )}
       {highlighted && !piece && <div className="dot"></div>}
@@ -60,6 +68,8 @@ interface ChessBoardProps {
   boardSetup: { [key: string]: string };
   onSquareClick: (position: string) => void;
   onDropPiece: (from: string, to: string) => void;
+  onDragStart: (from: string) => void;
+  onDragEnd: () => void;
   selectedSquare: string | null;
   highlightedSquares: string[];
   flipped?: boolean;
